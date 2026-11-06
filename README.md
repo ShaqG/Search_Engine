@@ -1,34 +1,28 @@
 # Search Engine for ICS Websites
 
-A search engine written from scratch: crawl and parse pages from the ICS
-websites, build a positional inverted index, and answer ranked queries from a
-Tkinter GUI.
+A Python search engine for a collection of previously crawled ICS web pages. It builds a positional inverted index from HTML and returns ranked URLs in the terminal.
 
-The point of the project was to build the whole retrieval pipeline by hand —
-parsing, stemming, duplicate removal, index layout, and ranking — instead of
-calling a search library.
+## Try a local query
 
-## Pipeline
+Run the commands from the repository root on Windows. The indexer expects a `DEV` directory containing JSON files with `url` and `content` fields.
 
-1. **`indexer.py`** — parses crawled HTML with BeautifulSoup, normalises tokens
-   with a Porter stemmer, drops near-duplicate pages with SimHash, and writes the
-   inverted index (`dict1.txt` … `dict3.txt`) together with the doc id → URL map.
-2. **`index_of_index.py`** — builds an index *of* the index: for every stem it
-   records `(index file, start offset, end offset)`, so a query only `seek()`s to
-   the posting lists it needs instead of loading the whole index into memory.
-3. **`search.py`** — term-at-a-time retrieval. Each query term is looked up in a
-   thread, scored with a TF-IDF style weight
-   (`1 + log10(tf) * log10(N / df) + importance / tf`), summed per URL, and the
-   ranked list is shown in a Tkinter window.
+If you don't have the original corpus, create `DEV/sample.json` with this single line:
 
-## Run
-
-```bash
-pip install nltk beautifulsoup4 numpy floc_simhash
-python indexer.py           # build the index
-python index_of_index.py    # build the index of the index
-python search.py            # then follow the prompt
+```json
+{"url":"https://example.com/retrieval","content":"<html><body><p>Information retrieval</p></body></html>"}
 ```
 
-`search.py` expects the index files and the URL map produced by the two scripts
-above to be in the working directory.
+```shell
+python -m pip install nltk beautifulsoup4 numpy floc_simhash
+python indexer.py
+python index_of_index.py
+python search.py
+```
+
+Enter `retrieval` to look up the sample URL. Enter `_q` to exit. The Python installation needs Tkinter because `search.py` imports it.
+
+## How it works
+
+1. [`indexer.py`](indexer.py) parses HTML with BeautifulSoup, stems terms with the Porter stemmer, uses SimHash for near-duplicate detection, and writes positional postings and a URL map.
+2. [`index_of_index.py`](index_of_index.py) records offsets into the index shards so queries can seek to the postings they need.
+3. [`search.py`](search.py) looks up each query term in a separate thread and ranks URLs with TF-IDF-style weights and a boost for terms in prominent HTML elements.
