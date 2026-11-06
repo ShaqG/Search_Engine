@@ -2,24 +2,35 @@
 
 A Python search engine for a collection of previously crawled ICS web pages. It builds a positional inverted index from HTML and returns ranked URLs in the terminal.
 
-## Try a local query
+## Try the three-page example
 
-Run the commands from the repository root on Windows. The indexer expects a `DEV` directory containing JSON files with `url` and `content` fields.
-
-If you don't have the original corpus, create `DEV/sample.json` with this single line:
-
-```json
-{"url":"https://example.com/retrieval","content":"<html><body><p>Information retrieval</p></body></html>"}
-```
+Install the dependencies from the repository root, then switch to the example
+directory. Its [`DEV` corpus](examples/three-pages/DEV) contains three JSON
+documents with `url` and `content` fields.
 
 ```shell
-python -m pip install nltk beautifulsoup4 numpy floc_simhash
-python indexer.py
-python index_of_index.py
-python search.py
+python -m pip install nltk beautifulsoup4 numpy scikit-learn
+python -m pip install --no-deps floc_simhash==0.1.0
+cd examples/three-pages
+python ../../indexer.py
+python ../../index_of_index.py
+python ../../search.py
 ```
 
-Enter `retrieval` to look up the sample URL. Enter `_q` to exit. The Python installation needs Tkinter because `search.py` imports it.
+Enter `retrieval` at the prompt. The same term appears in all three index shards,
+and the search should print these URLs in order:
+
+```text
+https://example.com/retrieval-guide
+https://example.com/retrieval-notes
+https://example.com/glossary
+```
+
+The guide matches in its title and heading, the notes match in a heading and
+body text, and the glossary matches only in body text. Enter `_q` to exit.
+The Python installation needs Tkinter because `search.py` imports it.
+`floc_simhash` 0.1.0 declares an older scikit-learn version. The two install
+commands above use a current scikit-learn build and skip that legacy pin.
 
 ## How it works
 

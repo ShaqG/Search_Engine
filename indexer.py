@@ -75,7 +75,7 @@ def similar(p):
 
 
 def get_link_and_content():
-    path = os.getcwd() + '\DEV'
+    path = os.path.join(os.getcwd(), "DEV")
     list_of_files = []
     num = 0
     cnt = 0
@@ -90,8 +90,7 @@ def get_link_and_content():
         cnt += 1
         # print(cnt)
         with open(file, 'r') as f:
-            s = f.readline()
-            json_dict = json.loads("\\n".join(s.split('\n')))
+            json_dict = json.load(f)
             ans.append((json_dict['url'], json_dict['content']))
 
     return ans

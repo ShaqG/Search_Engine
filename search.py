@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import re
+from ast import literal_eval
 import json
 import heapq
 from collections import defaultdict
@@ -86,35 +87,19 @@ class Search:
         def ivl_to_dict(term):  # 将ivl_l中的ivl转换为{url:tf-idf score}
             single_url_score = defaultdict(float)
 
-            # I'll need the inverteddict
-            # print(inverteddict)
-            try:
-                ivl_l_e = {}
-                pos = indexer_in[term]  # position
-                for i in pos:
-                    # print(i)
-                    stem_info = '{'  # {stem -> {url-id -> ([position], important_number)}}
-                    with open(i[0], 'r') as indexing:
-                        start = i[1]
-                        end = i[2]
-                        char_num = end - start
-                        if start < end:
-                            indexing.seek(start)
-                            info = indexing.read(char_num + 2)
-                            stem_info += info
-                    stem_info += '}'
-                stem_info_dict = eval(stem_info)
-                urls = stem_info_dict[term]
-                # urls = { 25265: ([952], 0), 25269: ([362], 0), 25276: ([24046, 24058, 26748, 26761, 53529, 56004, 99154, 107522, 108136, 133944, 168379, 169822, 169830, 189711, 197440, 216624, 216633, 216642, 216649, 216658, 225510, 232637, 232650, 232662, 232692, 249896], 0)}
-                for u in urls:
-                    if u in ivl_l_e:
-                        ivl_l_e[u][0] += len(urls[u][0])  # freq
-                        ivl_l_e[u][1] += urls[u][1]  # important
-                    else:
-                        ivl_l_e[u] = [len(urls[u][0]), urls[u][1]]
-                inverteddict = ivl_l_e
-            except KeyError:
-                return
+            inverteddict = {}
+            for shard, start, end in indexer_in.get(term, ()):
+                if start >= end:
+                    continue
+                with open(shard, 'r') as indexing:
+                    indexing.seek(start)
+                    stem_info = indexing.read(end - start + 2)
+
+                postings = literal_eval('{' + stem_info + '}')[term]
+                for doc_id, (positions, importance) in postings.items():
+                    counts = inverteddict.setdefault(doc_id, [0, 0])
+                    counts[0] += len(positions)
+                    counts[1] += importance
 
             for id, frequency in inverteddict.items():
                 url = self.url_dict[id]
