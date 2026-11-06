@@ -1,30 +1,17 @@
 # -*- coding: utf-8 -*-
 
+import argparse
 import re
 from ast import literal_eval
 import json
 import heapq
 from collections import defaultdict
 from threading import Thread, Lock
-from tkinter import *
 from nltk.stem import PorterStemmer
 import math
 #import indexer
-from time import time
 
 indexer_in = {}  # {stem:[(doc, start, end), (doc, start, end), (doc, start, end)], stem:[...]}
-
-
-def timer_func(func):
-    def wrap_func(*args, **kwargs):
-        t1 = time()
-        result = func(*args, **kwargs)
-        t2 = time()
-        print('*' * 30)
-        print(f'Function {func.__name__!r} executed in {(t2 - t1):.4f}s')
-        return result
-
-    return wrap_func
 
 
 class Search:
@@ -35,7 +22,7 @@ class Search:
         self.url_dict2 = {}
         with open("url_dict.txt", 'r') as f:
             j = f.read()
-            self.url_dict2 = eval(j)
+            self.url_dict2 = literal_eval(j)
             for key in self.url_dict2:
                 self.url_dict[self.url_dict2[key]] = key
 
@@ -80,7 +67,6 @@ class Search:
 
     """
 
-    @timer_func
     def term_at_a_time(self, Query: str):
         terms_url_score = {}
 
@@ -151,27 +137,50 @@ class Search:
         return res
 
 
-if __name__ == "__main__":
+def print_results(urls, interactive):
+    if not urls:
+        print("No results found.")
+        return
+
+    label = "result" if len(urls) == 1 else "results"
+    print(f"{len(urls)} {label}")
+    for rank, url in enumerate(urls, start=1):
+        print(f"{rank}. {url}")
+        if interactive and rank % 10 == 0 and rank < len(urls):
+            if input("Press Enter for more, or type _q to return to search: ").strip() == "_q":
+                break
+
+
+def main():
+    global indexer_in, lock
+    parser = argparse.ArgumentParser(description="Search a local HTML index.")
+    parser.add_argument("--query", help="Run one query and print all ranked results.")
+    args = parser.parse_args()
+    if args.query is not None and not args.query.strip():
+        parser.error("--query must contain text")
 
     lock = Lock()
-    with open("indexer_in.txt", 'r') as f:
-        j = f.read()
-        indexer_in = eval(j)
+    try:
+        with open("indexer_in.txt", "r") as index_file:
+            indexer_in = literal_eval(index_file.read())
+        search = Search("index_in")
+    except FileNotFoundError as error:
+        parser.exit(1, f"Missing {error.filename}. Run indexer.py and index_of_index.py first.\n")
 
-    while True:
-        query = input("Enter query (type _q to exit):")
-        if query == '_q':
-            break
-        s = Search("index_in")  # index_in = index
-        urls = s.term_at_a_time(query)
-        url_list = s.rank(urls)
-        if len(url_list) <= 10:
-            for i in url_list:
-                print(i)
-        else:
-            t = 0
-            for i in range(t, len(url_list)):
-                print(url_list[i])
-                if i % 10 == 9:
-                    if input("Press Enter for more results, or type _q to exit:") == '_q':
-                        break
+    if args.query is not None:
+        print_results(search.rank(search.term_at_a_time(args.query)), interactive=False)
+        return
+
+    try:
+        while True:
+            query = input("Search (type _q to exit): ").strip()
+            if query == "_q":
+                break
+            if query:
+                print_results(search.rank(search.term_at_a_time(query)), interactive=True)
+    except (EOFError, KeyboardInterrupt):
+        print()
+
+
+if __name__ == "__main__":
+    main()

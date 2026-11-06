@@ -14,21 +14,24 @@ python -m pip install --no-deps floc_simhash==0.1.0
 cd examples/three-pages
 python ../../indexer.py
 python ../../index_of_index.py
-python ../../search.py
+python ../../search.py --query retrieval
 ```
 
-Enter `retrieval` at the prompt. The same term appears in all three index shards,
-and the search should print these URLs in order:
+The same term appears in all three index shards. The command prints:
 
 ```text
-https://example.com/retrieval-guide
-https://example.com/retrieval-notes
-https://example.com/glossary
+3 results
+1. https://example.com/retrieval-guide
+2. https://example.com/retrieval-notes
+3. https://example.com/glossary
 ```
 
 The guide matches in its title and heading, the notes match in a heading and
-body text, and the glossary matches only in body text. Enter `_q` to exit.
-The Python installation needs Tkinter because `search.py` imports it.
+body text, and the glossary matches only in body text.
+
+Run `python ../../search.py` to try more queries interactively. Results are
+shown ten at a time. Enter `_q` at the search prompt to exit.
+
 `floc_simhash` 0.1.0 declares an older scikit-learn version. The two install
 commands above use a current scikit-learn build and skip that legacy pin.
 
